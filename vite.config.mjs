@@ -1,4 +1,3 @@
-// https://github.com/vitejs/vite/discussions/3448
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -6,8 +5,7 @@ import jsconfigPaths from 'vite-jsconfig-paths';
 
 export default defineConfig({
   plugins: [react(), jsconfigPaths()],
-  // Настройка base: используется домен, предоставленный Railway
-  base: process.env.VITE_BASE_URL || '/', // Динамическая подстановка base
+  base: process.env.VITE_BASE_URL || '/', // Указываем базовый путь
   define: {
     global: 'window'
   },
@@ -24,19 +22,18 @@ export default defineConfig({
     ]
   },
   server: {
-    open: true,
-    port: 3000,
+    host: true, // Это важно для Railway, чтобы слушать внешний адрес
+    port: parseInt(process.env.PORT) || 3000, // Railway задаёт порт через переменную PORT
     proxy: {
-      // Прокси для API: указываем правильный backend
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        target: process.env.VITE_API_URL || 'http://localhost:5000', // URL API
         changeOrigin: true,
         secure: false
       }
     }
   },
   preview: {
-    open: true,
-    port: 3000
+    host: true, // Аналогично, чтобы слушать внешний адрес
+    port: parseInt(process.env.PORT) || 3000 // Используем предоставленный Railway порт
   }
 });
