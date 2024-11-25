@@ -1,0 +1,1 @@
+import{j as r}from"./index-B7pbG10J.js";const e=()=>r.jsxs("div",{children:[r.jsx("h1",{children:"Чат"}),r.jsx("p",{children:"Здесь будет интерфейс для вопросов по базе данных запчастей."})]});export{e as default};
