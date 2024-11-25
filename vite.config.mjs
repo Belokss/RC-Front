@@ -4,12 +4,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import jsconfigPaths from 'vite-jsconfig-paths';
 
-// ----------------------------------------------------------------------
-
 export default defineConfig({
   plugins: [react(), jsconfigPaths()],
-  // https://github.com/jpuri/react-draft-wysiwyg/issues/1317
-  base: '/free', // accessing env variable is not possible here. So hard coding this.
+  // Настройка base: используется домен, предоставленный Railway
+  base: process.env.VITE_BASE_URL || '/', // Динамическая подстановка base
   define: {
     global: 'window'
   },
@@ -29,8 +27,9 @@ export default defineConfig({
     open: true,
     port: 3000,
     proxy: {
+      // Прокси для API: указываем правильный backend
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
         secure: false
       }
