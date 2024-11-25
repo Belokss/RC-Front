@@ -1,11 +1,15 @@
+// https://github.com/vitejs/vite/discussions/3448
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import jsconfigPaths from 'vite-jsconfig-paths';
 
+// ----------------------------------------------------------------------
+
 export default defineConfig({
   plugins: [react(), jsconfigPaths()],
-  base: process.env.VITE_BASE_URL || '/', // Указываем базовый путь
+  // https://github.com/jpuri/react-draft-wysiwyg/issues/1317
+  base: '/free', // accessing env variable is not possible here. So hard coding this.
   define: {
     global: 'window'
   },
@@ -22,18 +26,18 @@ export default defineConfig({
     ]
   },
   server: {
-    host: true, // Это важно для Railway, чтобы слушать внешний адрес
-    port: parseInt(process.env.PORT) || 3000, // Railway задаёт порт через переменную PORT
+    open: true,
+    port: 3000,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000', // URL API
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false
       }
     }
   },
   preview: {
-    host: true, // Аналогично, чтобы слушать внешний адрес
-    port: parseInt(process.env.PORT) || 3000 // Используем предоставленный Railway порт
+    open: true,
+    port: 3000
   }
 });
