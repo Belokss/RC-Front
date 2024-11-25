@@ -9,9 +9,8 @@
     "url": "https://codedthemes.com/"
   },
   "scripts": {
-    "start": "vite preview --host --port $PORT",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "vite build", // Команда для сборки
+    "preview": "vite preview --host --port $PORT", // Предпросмотр для локального тестирования
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\""
