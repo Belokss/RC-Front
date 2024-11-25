@@ -1,0 +1,33 @@
+{
+    "manageParts": "Rezerves daļu pārvaldība",
+    "logChanges": "Izmaiņu žurnāls",
+    "enterCommand": "Ievadiet komandu",
+    "processCommand": "Apstrādāt komandu",
+    "confirmChanges": "Apstipriniet izmaiņas",
+    "yes": "Jā",
+    "cancel": "Atcelt",
+    "search": "Meklēt",
+    "deleteSelected": "Dzēst izvēlētos",
+    "loadingData": "Datu ielāde...",
+    "useVoice": "🎤 Lietot balsi",
+    "stopRecording": "🛑 Apstāt ierakstu",
+    "voiceCommand": "Balss komanda",
+    "executeChanges": "Izpildīt izmaiņas",
+    "added": "Pievienots",
+    "removed": "Dzēsts",
+    "pcs": "gab.",
+    "enterCommandPlaceholder": "Piemēram: Aizmugurējais spārns BMW, noņemt 3 sensorus Ford",
+    "youWantToExecuteChanges": "Vai vēlaties veikt šādas izmaiņas:",
+    "manufacturer": "Ražotājs",
+    "part": "Daļa",
+    "model": "Modelis",
+    "quantity": "Daudzums",
+    "navigation": "Navigācija",
+    "parts": "Rezerves daļas",
+    "addRemove": "Pievienošana un noņemšana",
+    "chat": "Čats"
+    
+    
+    
+  }
+  
