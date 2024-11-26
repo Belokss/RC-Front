@@ -9,7 +9,7 @@
     "url": "https://codedthemes.com/"
   },
   "scripts": {
-    "start": "vite preview --host --port $PORT",
+    "start": "vite preview --host 0.0.0.0 --port $PORT",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
