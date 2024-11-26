@@ -1,15 +1,11 @@
-// https://github.com/vitejs/vite/discussions/3448
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import jsconfigPaths from 'vite-jsconfig-paths';
 
-// ----------------------------------------------------------------------
-
 export default defineConfig({
   plugins: [react(), jsconfigPaths()],
-  // https://github.com/jpuri/react-draft-wysiwyg/issues/1317
-  base: '/', // accessing env variable is not possible here. So hard coding this.
+  base: '/', // Путь по умолчанию для деплоя на корень
   define: {
     global: 'window'
   },
@@ -26,8 +22,9 @@ export default defineConfig({
     ]
   },
   server: {
+    host: '0.0.0.0', // Добавь хост 0.0.0.0, чтобы Railway мог обращаться к серверу
     open: true,
-    port: 3000,
+    port: parseInt(process.env.PORT) || 3000, // Используй PORT из окружения, если доступен
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -37,7 +34,8 @@ export default defineConfig({
     }
   },
   preview: {
+    host: '0.0.0.0', // Аналогично, чтобы preview слушал на 0.0.0.0
     open: true,
-    port: 3000
+    port: parseInt(process.env.PORT) || 3000 // Используй PORT из окружения
   }
 });
