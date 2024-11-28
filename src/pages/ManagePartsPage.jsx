@@ -12,7 +12,7 @@ const ManagePartsPage = () => {
   const [log, setLog] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('lv'); // Установлено на латышский по умолчанию
-  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
 
@@ -27,8 +27,8 @@ const ManagePartsPage = () => {
   const handleVoiceCommand = async () => {
     if (isRecording) {
       try {
-        if (mediaRecorder) {
-          mediaRecorder.stop();
+        if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop();
         } else {
           console.error('MediaRecorder не инициализирован');
         }
@@ -53,7 +53,7 @@ const ManagePartsPage = () => {
         }
 
         const newMediaRecorder = new MediaRecorder(stream, { mimeType });
-        setMediaRecorder(newMediaRecorder);
+        mediaRecorderRef.current = newMediaRecorder;
         audioChunksRef.current = [];
 
         newMediaRecorder.ondataavailable = (event) => {
