@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   TextField, Button, Typography, Stack, Dialog,
   DialogActions, DialogContent, DialogTitle, List, ListItem, ListItemText
@@ -12,7 +12,7 @@ const ManagePartsPage = () => {
   const [log, setLog] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('lv'); // Установлено на латышский по умолчанию
-  const mediaRecorderRef = useRef(null);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
   const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
 
@@ -24,27 +24,23 @@ const ManagePartsPage = () => {
     setCommand(e.target.value);
   };
 
-  const handleVoiceCommand = useCallback(async () => {
-    console.log('isRecording at start:', isRecording);
+  const handleVoiceCommand = async () => {
     if (isRecording) {
-      // Остановка записи
       try {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
+        if (mediaRecorder) {
+          mediaRecorder.stop();
         } else {
-          console.error('MediaRecorder не инициализирован или уже остановлен');
+          console.error('MediaRecorder не инициализирован');
         }
       } catch (error) {
         console.error("Ошибка при остановке записи:", error);
       }
       setIsRecording(false);
-      // Остановка потока
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
     } else {
-      // Начало записи
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
@@ -56,18 +52,17 @@ const ManagePartsPage = () => {
           return;
         }
 
-        const mediaRecorder = new MediaRecorder(stream, { mimeType });
-        mediaRecorderRef.current = mediaRecorder;
+        const newMediaRecorder = new MediaRecorder(stream, { mimeType });
+        setMediaRecorder(newMediaRecorder);
         audioChunksRef.current = [];
 
-        // Установка обработчиков событий до начала записи
-        mediaRecorder.ondataavailable = (event) => {
+        newMediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
           }
         };
 
-        mediaRecorder.onstop = async () => {
+        newMediaRecorder.onstop = async () => {
           console.log('Запись остановлена');
           console.log('Количество аудио чанков:', audioChunksRef.current.length);
 
@@ -105,7 +100,6 @@ const ManagePartsPage = () => {
               console.error("Данные ответа:", error.response.data);
             }
           } finally {
-            // Остановка потока
             if (streamRef.current) {
               streamRef.current.getTracks().forEach((track) => track.stop());
               streamRef.current = null;
@@ -113,14 +107,13 @@ const ManagePartsPage = () => {
           }
         };
 
-        // Начало записи после установки обработчиков
-        mediaRecorder.start();
+        newMediaRecorder.start();
         setIsRecording(true);
       } catch (error) {
         console.error("Ошибка доступа к микрофону:", error);
       }
     }
-  }, [isRecording, language]);
+  };
 
   const formatLogEntry = (item) => {
     const action = item.action === 'add' ? 'Pievienots' : 'Izņemts';
