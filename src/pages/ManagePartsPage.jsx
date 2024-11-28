@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   TextField, Button, Typography, Stack, Dialog,
   DialogActions, DialogContent, DialogTitle, List, ListItem, ListItemText
@@ -24,8 +24,10 @@ const ManagePartsPage = () => {
     setCommand(e.target.value);
   };
 
-  const handleVoiceCommand = async () => {
+  const handleVoiceCommand = useCallback(async () => {
+    console.log('isRecording at start:', isRecording);
     if (isRecording) {
+      // Остановка записи
       try {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
@@ -36,7 +38,13 @@ const ManagePartsPage = () => {
         console.error("Ошибка при остановке записи:", error);
       }
       setIsRecording(false);
+      // Остановка потока
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
     } else {
+      // Начало записи
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
@@ -52,78 +60,67 @@ const ManagePartsPage = () => {
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
+        // Установка обработчиков событий до начала записи
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          console.log('Запись остановлена');
+          console.log('Количество аудио чанков:', audioChunksRef.current.length);
+
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log('Размер audioBlob:', audioBlob.size);
+
+          // Очистка audioChunksRef после использования
+          audioChunksRef.current = [];
+
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
+          formData.append('language', language);
+
+          try {
+            const response = await axios.post('/api/voice-command', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity,
+            });
+
+            const { changes } = response.data;
+
+            if (Array.isArray(changes)) {
+              setConfirmationList(changes);
+            } else {
+              console.error("Ожидался массив изменений, получено:", changes);
+              setConfirmationList([]);
+            }
+
+            setOpenConfirmationDialog(true);
+          } catch (error) {
+            console.error("Ошибка обработки аудио:", error.message);
+            if (error.response) {
+              console.error("Статус ответа:", error.response.status);
+              console.error("Данные ответа:", error.response.data);
+            }
+          } finally {
+            // Остановка потока
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop());
+              streamRef.current = null;
+            }
+          }
+        };
+
+        // Начало записи после установки обработчиков
         mediaRecorder.start();
         setIsRecording(true);
       } catch (error) {
         console.error("Ошибка доступа к микрофону:", error);
       }
     }
-  };
-
-  useEffect(() => {
-    const mediaRecorder = mediaRecorderRef.current;
-    if (!mediaRecorder) return;
-
-    const handleDataAvailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    const handleStop = async () => {
-      console.log('Запись остановлена');
-      console.log('Количество аудио чанков:', audioChunksRef.current.length);
-
-      const mimeType = 'audio/webm';
-      const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-      console.log('Размер audioBlob:', audioBlob.size);
-
-      // Очистка audioChunksRef после использования
-      audioChunksRef.current = [];
-
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-      formData.append('language', language);
-
-      try {
-        const response = await axios.post('/api/voice-command', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-
-        const { changes } = response.data;
-
-        if (Array.isArray(changes)) {
-          setConfirmationList(changes);
-        } else {
-          console.error("Ожидался массив изменений, получено:", changes);
-          setConfirmationList([]);
-        }
-
-        setOpenConfirmationDialog(true);
-      } catch (error) {
-        console.error("Ошибка обработки аудио:", error.message);
-        if (error.response) {
-          console.error("Статус ответа:", error.response.status);
-          console.error("Данные ответа:", error.response.data);
-        }
-      } finally {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-        }
-      }
-    };
-
-    mediaRecorder.addEventListener('dataavailable', handleDataAvailable);
-    mediaRecorder.addEventListener('stop', handleStop);
-
-    return () => {
-      mediaRecorder.removeEventListener('dataavailable', handleDataAvailable);
-      mediaRecorder.removeEventListener('stop', handleStop);
-    };
-  }, [mediaRecorderRef.current]);
+  }, [isRecording, language]);
 
   const formatLogEntry = (item) => {
     const action = item.action === 'add' ? 'Pievienots' : 'Izņemts';
