@@ -2,11 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { TextField, Box, Button } from '@mui/material';
 import axios from 'axios';
-import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const PartsTable = () => {
-  const { t } = useTranslation(); // Инициализируем useTranslation
-
   const [parts, setParts] = useState([]);
   const [filteredParts, setFilteredParts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +18,7 @@ const PartsTable = () => {
         setFilteredParts(response.data);
         setLoading(false);
       } catch (error) {
-        console.error("Ошибка при загрузке данных запчастей:", error);
+        console.error("Kļūda, ielādējot detaļas:", error);
       }
     };
 
@@ -47,7 +44,7 @@ const PartsTable = () => {
       setParts(updatedParts);
       setFilteredParts(updatedParts);
     } catch (error) {
-      console.error("Ошибка при обновлении данных:", error);
+      console.error("Kļūda, atjauninot datus:", error);
     }
   };
 
@@ -61,32 +58,32 @@ const PartsTable = () => {
       setFilteredParts(updatedParts);
       setSelectedRows([]);
     } catch (error) {
-      console.error("Ошибка при удалении данных:", error);
+      console.error("Kļūda, dzēšot datus:", error);
     }
   };
 
   const handleRowSelectionModelChange = (newSelection) => {
     setSelectedRows(newSelection);
-    console.log("Выбранные строки:", newSelection);
+    console.log("Izvēlētās rindas:", newSelection);
   };
 
-  // Используем t() для перевода заголовков колонок
+  // Заменяем заголовки колонок на латышские слова
   const columns = [
-    { field: 'id', headerName: t('id'), width: 90 },
-    { field: 'manufacturer', headerName: t('manufacturer'), width: 150, editable: true },
-    { field: 'model', headerName: t('model'), width: 150, editable: true }, // Перемещаем 'model' сюда
-    { field: 'part', headerName: t('part'), width: 150, editable: true },
-    { field: 'quantity', headerName: t('quantity'), width: 110, type: 'number', editable: true },
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'manufacturer', headerName: 'Ražotājs', width: 150, editable: true },
+    { field: 'model', headerName: 'Modelis', width: 150, editable: true },
+    { field: 'part', headerName: 'Detaļa', width: 150, editable: true },
+    { field: 'quantity', headerName: 'Daudzums', width: 110, type: 'number', editable: true },
   ];
 
   if (loading) {
-    return <p>{t('loading')}</p>; // Переводим сообщение о загрузке
+    return <p>Ielādē...</p>; // Сообщение о загрузке на латышском
   }
 
   return (
     <Box sx={{ height: 600, width: '100%' }}>
       <TextField
-        label={t('search')} // Переводим метку поля поиска
+        label="Meklēt" // Метка поля поиска на латышском
         variant="outlined"
         value={searchText}
         onChange={handleSearch}
@@ -100,7 +97,7 @@ const PartsTable = () => {
         disabled={selectedRows.length === 0}
         sx={{ mb: 2 }}
       >
-        {t('delete_selected')} {/* Переводим текст кнопки */}
+        Dzēst izvēlētos {/* Текст кнопки на латышском */}
       </Button>
       <DataGrid
         rows={filteredParts}
