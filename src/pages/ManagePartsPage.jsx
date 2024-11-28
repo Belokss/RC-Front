@@ -1,5 +1,3 @@
-// ManagePartsPage.js
-
 import React, { useState, useRef } from 'react';
 import {
   TextField, Button, Typography, Stack, Dialog,
@@ -28,19 +26,28 @@ const ManagePartsPage = () => {
 
   const handleVoiceCommand = async () => {
     if (isRecording) {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (error) {
+        console.error("Ошибка при остановке записи:", error);
+      }
       setIsRecording(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
     } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
 
-        let mimeType = '';
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          mimeType = 'audio/webm;codecs=opus';
-        } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-          mimeType = 'audio/ogg;codecs=opus';
-        } else {
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+          ? 'audio/ogg;codecs=opus'
+          : null;
+
+        if (!mimeType) {
           console.error('No available audio recording formats');
           return;
         }
@@ -80,9 +87,12 @@ const ManagePartsPage = () => {
             setOpenConfirmationDialog(true);
           } catch (error) {
             console.error("Error processing audio:", error);
+          } finally {
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop());
+              streamRef.current = null;
+            }
           }
-
-          streamRef.current.getTracks().forEach(track => track.stop());
         };
 
         mediaRecorder.start();
@@ -148,7 +158,7 @@ const ManagePartsPage = () => {
           p: 3,
           borderRadius: 2,
           width: '100%',
-          boxShadow: 2
+          boxShadow: 2,
         }}
       >
         <Typography variant="h6">Izmaiņu žurnāls</Typography>
@@ -162,14 +172,14 @@ const ManagePartsPage = () => {
       </Stack>
 
       <TextField
-        label={language === 'ru' ? "Введите команду" : "Ievadiet komandu"}
+        label={language === 'ru' ? 'Введите команду' : 'Ievadiet komandu'}
         value={command}
         onChange={handleCommandChange}
         fullWidth
         placeholder={
           language === 'ru'
-            ? "Например: Заднее крыло BMW, удалить 3 датчика из Ford"
-            : "Piemēram: Aizmugurējais spārns BMW, izņemt 3 sensorus no Ford"
+            ? 'Например: Заднее крыло BMW, удалить 3 датчика из Ford'
+            : 'Piemēram: Aizmugurējais spārns BMW, izņemt 3 sensorus no Ford'
         }
         sx={{ mb: 3 }}
       />
@@ -179,25 +189,40 @@ const ManagePartsPage = () => {
         onClick={handleVoiceCommand}
         sx={{ mb: 1 }}
       >
-        {isRecording 
-          ? (language === 'ru' ? "🛑 Остановить запись" : "🛑 Pārtraukt ierakstu") 
-          : (language === 'ru' ? "🎤 Использовать голосовую команду" : "🎤 Lietot balss komandu")}
+        {isRecording
+          ? language === 'ru'
+            ? '🛑 Остановить запись'
+            : '🛑 Pārtraukt ierakstu'
+          : language === 'ru'
+          ? '🎤 Использовать голосовую команду'
+          : '🎤 Lietot balss komandu'}
       </Button>
 
-      <Button variant="contained" color="primary" onClick={() => processCommand(command)}>
-        {language === 'ru' ? "Обработать команду" : "Apstrādāt komandu"}
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => processCommand(command)}
+      >
+        {language === 'ru' ? 'Обработать команду' : 'Apstrādāt komandu'}
       </Button>
 
-      {/* Переносим кнопку переключения языка сюда */}
-      <Button variant="outlined" onClick={handleLanguageToggle} sx={{ mt: 2 }}>
-        {language === 'ru' ? 'Переключить на латышский' : 'Pārslēgt uz krievu valodu'}
+      <Button
+        variant="outlined"
+        onClick={handleLanguageToggle}
+        sx={{ mt: 2 }}
+      >
+        {language === 'ru'
+          ? 'Переключить на латышский'
+          : 'Pārslēgt uz krievu valodu'}
       </Button>
 
       <Dialog open={openConfirmationDialog} onClose={() => setOpenConfirmationDialog(false)}>
-        <DialogTitle>{language === 'ru' ? "Подтвердить изменения" : "Apstiprināt izmaiņas"}</DialogTitle>
+        <DialogTitle>{language === 'ru' ? 'Подтвердить изменения' : 'Apstiprināt izmaiņas'}</DialogTitle>
         <DialogContent>
           <Typography>
-            {language === 'ru' ? "Вы хотите внести следующие изменения:" : "Vai vēlaties veikt šādas izmaiņas:"}
+            {language === 'ru'
+              ? 'Вы хотите внести следующие изменения:'
+              : 'Vai vēlaties veikt šādas izmaiņas:'}
           </Typography>
           <ul>
             {(confirmationList || []).map((item, index) => (
@@ -207,10 +232,10 @@ const ManagePartsPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenConfirmationDialog(false)} color="secondary">
-            {language === 'ru' ? "Отмена" : "Atcelt"}
+            {language === 'ru' ? 'Отмена' : 'Atcelt'}
           </Button>
           <Button onClick={confirmChanges} color="primary">
-            {language === 'ru' ? "Да" : "Jā"}
+            {language === 'ru' ? 'Да' : 'Jā'}
           </Button>
         </DialogActions>
       </Dialog>
