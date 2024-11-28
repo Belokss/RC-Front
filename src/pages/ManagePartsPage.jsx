@@ -45,18 +45,10 @@ const ManagePartsPage = () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
 
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : MediaRecorder.isTypeSupported('audio/mpeg')
-          ? 'audio/mpeg'
-          : null;
+        const mimeType = 'audio/webm';
 
-        if (!mimeType) {
-          console.error('Нет доступных форматов для записи аудио');
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          console.error('Ваше устройство не поддерживает формат audio/webm');
           return;
         }
 
@@ -75,7 +67,7 @@ const ManagePartsPage = () => {
           console.log('Количество аудио чанков:', audioChunksRef.current.length);
 
           const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          console.log('Размер аудио блоба:', audioBlob.size);
+          console.log('Размер audioBlob:', audioBlob.size);
 
           // Очистка audioChunksRef после использования
           audioChunksRef.current = [];
