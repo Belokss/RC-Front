@@ -12,8 +12,8 @@ const ManagePartsPage = () => {
   const [log, setLog] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('lv'); // Установлено на латышский по умолчанию
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
   const streamRef = useRef(null);
 
   const handleLanguageToggle = () => {
@@ -27,7 +27,11 @@ const ManagePartsPage = () => {
   const handleVoiceCommand = async () => {
     if (isRecording) {
       try {
-        mediaRecorderRef.current.stop();
+        if (mediaRecorder) {
+          mediaRecorder.stop();
+        } else {
+          console.error('MediaRecorder не инициализирован');
+        }
       } catch (error) {
         console.error("Ошибка при остановке записи:", error);
       }
@@ -45,25 +49,29 @@ const ManagePartsPage = () => {
           ? 'audio/webm;codecs=opus'
           : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
           ? 'audio/ogg;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : MediaRecorder.isTypeSupported('audio/mpeg')
+          ? 'audio/mpeg'
           : null;
 
         if (!mimeType) {
-          console.error('No available audio recording formats');
+          console.error('Нет доступных форматов для записи аудио');
           return;
         }
 
-        const mediaRecorder = new MediaRecorder(stream, { mimeType });
-        mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
+        const newMediaRecorder = new MediaRecorder(stream, { mimeType });
+        setMediaRecorder(newMediaRecorder);
+        setAudioChunks([]);
 
-        mediaRecorder.ondataavailable = (event) => {
+        newMediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
+            setAudioChunks((prevChunks) => [...prevChunks, event.data]);
           }
         };
 
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        newMediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: mimeType });
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
           formData.append('language', language);
@@ -80,13 +88,13 @@ const ManagePartsPage = () => {
             if (Array.isArray(changes)) {
               setConfirmationList(changes);
             } else {
-              console.error("Expected changes array, received:", changes);
+              console.error("Ожидался массив изменений, получено:", changes);
               setConfirmationList([]);
             }
 
             setOpenConfirmationDialog(true);
           } catch (error) {
-            console.error("Error processing audio:", error);
+            console.error("Ошибка обработки аудио:", error);
           } finally {
             if (streamRef.current) {
               streamRef.current.getTracks().forEach((track) => track.stop());
@@ -95,10 +103,10 @@ const ManagePartsPage = () => {
           }
         };
 
-        mediaRecorder.start();
+        newMediaRecorder.start();
         setIsRecording(true);
       } catch (error) {
-        console.error("Error accessing microphone:", error);
+        console.error("Ошибка доступа к микрофону:", error);
       }
     }
   };
