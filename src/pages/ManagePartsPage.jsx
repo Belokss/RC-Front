@@ -85,8 +85,9 @@ const ManagePartsPage = () => {
 
         const recorder = new RecordRTC(stream, {
           type: 'audio',
-          mimeType: 'audio/webm',
-          recorderType: RecordRTC.MediaStreamRecorder,
+          mimeType: 'audio/wav',
+          recorderType: RecordRTC.StereoAudioRecorder,
+          desiredSampRate: 16000,
         });
 
         recorder.startRecording();
