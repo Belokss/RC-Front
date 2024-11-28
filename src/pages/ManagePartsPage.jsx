@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   TextField, Button, Typography, Stack, Dialog,
   DialogActions, DialogContent, DialogTitle, List, ListItem, ListItemText
 } from '@mui/material';
 import axios from 'axios';
+import RecordRTC from 'recordrtc';
 
 const ManagePartsPage = () => {
   const [command, setCommand] = useState('');
@@ -11,9 +12,8 @@ const ManagePartsPage = () => {
   const [openConfirmationDialog, setOpenConfirmationDialog] = useState(false);
   const [log, setLog] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [language, setLanguage] = useState('lv'); // Установлено на латышский по умолчанию
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const audioChunksRef = useRef([]);
+  const [language, setLanguage] = useState('lv');
+  const recorderRef = useRef(null);
   const streamRef = useRef(null);
 
   const handleLanguageToggle = () => {
@@ -24,53 +24,23 @@ const ManagePartsPage = () => {
     setCommand(e.target.value);
   };
 
-  const handleVoiceCommand = async () => {
+  const handleVoiceCommand = useCallback(async () => {
     if (isRecording) {
-      try {
-        if (mediaRecorder) {
-          mediaRecorder.stop();
-        } else {
-          console.error('MediaRecorder не инициализирован');
-        }
-      } catch (error) {
-        console.error("Ошибка при остановке записи:", error);
-      }
-      setIsRecording(false);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
+      // Остановка записи
+      if (recorderRef.current) {
+        recorderRef.current.stopRecording(async () => {
+          const audioBlob = recorderRef.current.getBlob();
+          console.log('Запись остановлена, размер блоба:', audioBlob.size);
 
-        const mimeType = 'audio/webm';
+          recorderRef.current.destroy();
+          recorderRef.current = null;
+          setIsRecording(false);
 
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          console.error('Ваше устройство не поддерживает формат audio/webm');
-          return;
-        }
-
-        const newMediaRecorder = new MediaRecorder(stream, { mimeType });
-        setMediaRecorder(newMediaRecorder);
-        audioChunksRef.current = [];
-
-        newMediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
+          // Остановка потока
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
           }
-        };
-
-        newMediaRecorder.onstop = async () => {
-          console.log('Запись остановлена');
-          console.log('Количество аудио чанков:', audioChunksRef.current.length);
-
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          console.log('Размер audioBlob:', audioBlob.size);
-
-          // Очистка audioChunksRef после использования
-          audioChunksRef.current = [];
 
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
@@ -88,32 +58,45 @@ const ManagePartsPage = () => {
             if (Array.isArray(changes)) {
               setConfirmationList(changes);
             } else {
-              console.error("Ожидался массив изменений, получено:", changes);
+              console.error('Ожидался массив изменений, получено:', changes);
               setConfirmationList([]);
             }
 
             setOpenConfirmationDialog(true);
           } catch (error) {
-            console.error("Ошибка обработки аудио:", error.message);
+            console.error('Ошибка обработки аудио:', error.message);
             if (error.response) {
-              console.error("Статус ответа:", error.response.status);
-              console.error("Данные ответа:", error.response.data);
-            }
-          } finally {
-            if (streamRef.current) {
-              streamRef.current.getTracks().forEach((track) => track.stop());
-              streamRef.current = null;
+              console.error('Статус ответа:', error.response.status);
+              console.error('Данные ответа:', error.response.data);
             }
           }
-        };
+        });
+      }
+    } else {
+      // Начало записи
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          console.error('Ваш браузер не поддерживает доступ к медиаустройствам.');
+          return;
+        }
 
-        newMediaRecorder.start();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+
+        const recorder = new RecordRTC(stream, {
+          type: 'audio',
+          mimeType: 'audio/webm',
+          recorderType: RecordRTC.MediaStreamRecorder,
+        });
+
+        recorder.startRecording();
+        recorderRef.current = recorder;
         setIsRecording(true);
       } catch (error) {
-        console.error("Ошибка доступа к микрофону:", error);
+        console.error('Ошибка доступа к микрофону:', error);
       }
     }
-  };
+  }, [isRecording, language]);
 
   const formatLogEntry = (item) => {
     const action = item.action === 'add' ? 'Pievienots' : 'Izņemts';
@@ -129,13 +112,13 @@ const ManagePartsPage = () => {
       if (Array.isArray(changes)) {
         setConfirmationList(changes);
       } else {
-        console.error("Expected changes array, received:", changes);
+        console.error('Ожидался массив изменений, получено:', changes);
         setConfirmationList([]);
       }
 
       setOpenConfirmationDialog(true);
     } catch (error) {
-      console.error("Error processing command:", error);
+      console.error('Ошибка обработки команды:', error);
     }
   };
 
@@ -154,7 +137,7 @@ const ManagePartsPage = () => {
       setCommand('');
       setConfirmationList([]);
     } catch (error) {
-      console.error("Error executing changes:", error);
+      console.error('Ошибка применения изменений:', error);
     }
   };
 
