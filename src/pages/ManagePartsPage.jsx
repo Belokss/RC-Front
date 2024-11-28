@@ -13,7 +13,7 @@ const ManagePartsPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('lv'); // Установлено на латышский по умолчанию
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioChunks, setAudioChunks] = useState([]);
+  const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
 
   const handleLanguageToggle = () => {
@@ -62,16 +62,24 @@ const ManagePartsPage = () => {
 
         const newMediaRecorder = new MediaRecorder(stream, { mimeType });
         setMediaRecorder(newMediaRecorder);
-        setAudioChunks([]);
+        audioChunksRef.current = [];
 
         newMediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
-            setAudioChunks((prevChunks) => [...prevChunks, event.data]);
+            audioChunksRef.current.push(event.data);
           }
         };
 
         newMediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: mimeType });
+          console.log('Запись остановлена');
+          console.log('Количество аудио чанков:', audioChunksRef.current.length);
+
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log('Размер аудио блоба:', audioBlob.size);
+
+          // Очистка audioChunksRef после использования
+          audioChunksRef.current = [];
+
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
           formData.append('language', language);
@@ -94,7 +102,11 @@ const ManagePartsPage = () => {
 
             setOpenConfirmationDialog(true);
           } catch (error) {
-            console.error("Ошибка обработки аудио:", error);
+            console.error("Ошибка обработки аудио:", error.message);
+            if (error.response) {
+              console.error("Статус ответа:", error.response.status);
+              console.error("Данные ответа:", error.response.data);
+            }
           } finally {
             if (streamRef.current) {
               streamRef.current.getTracks().forEach((track) => track.stop());
